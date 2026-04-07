@@ -1,13 +1,12 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { InsertUser, users } from "../drizzle/schema";
-import { ENV } from "./_core/env";
+import { type InsertUser, users } from "../drizzle/schema.js";
+import { ENV } from "./_core/env.js";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _client: ReturnType<typeof postgres> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (_db) return _db;
 
@@ -63,6 +62,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       "password",
       "exchangePw",
     ] as const;
+
     type TextField = (typeof textFields)[number];
 
     const assignNullable = (field: TextField) => {
@@ -76,9 +76,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.lastSignedIn !== undefined) {
       values.lastSignedIn = user.lastSignedIn;
     }
+
     if (user.status !== undefined) {
       values.status = user.status;
     }
+
     if (user.role !== undefined) {
       values.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
@@ -122,11 +124,15 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
+
   return result.length > 0 ? result[0] : undefined;
 }
 
-// Cleanup function for serverless environments
 export async function closeDb() {
   if (_client) {
     await _client.end();
