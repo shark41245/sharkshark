@@ -39,7 +39,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) {
+  console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
+  throw new Error("현재 서버 설정 문제로 회원가입이 불가능합니다. 관리자에게 문의하세요.");
+}
 
         if (input.joinCode !== JOIN_CODE) {
           throw new Error("가입 코드는 2026만 가능합니다.");
@@ -54,7 +57,7 @@ export const appRouter = router({
           throw new Error("이미 존재하는 아이디입니다.");
         }
 
-        await (db as any).insert(users).values({
+        await db.insert(users).values({
           userId: input.userId,
           password: input.password,
           nickname: input.nickname,
@@ -77,7 +80,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) {
+  console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
+  throw new Error("현재 서버 설정 문제로 회원가입이 불가능합니다. 관리자에게 문의하세요.");
+}
 
         const userList = await db.select().from(users).where(eq(users.userId, input.userId)).limit(1);
         const user = userList[0];
@@ -95,7 +101,10 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database not available");
+        if (!db) {
+  console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
+  throw new Error("현재 서버 설정 문제로 회원가입이 불가능합니다. 관리자에게 문의하세요.");
+}
 
         if (input.adminPassword !== ADMIN_PASSWORD) {
           throw new Error("관리자 비밀번호가 올바르지 않습니다.");
