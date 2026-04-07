@@ -1,9 +1,9 @@
-import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
-import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
-import { getDb } from "./db";
-import { users } from "../drizzle/schema";
+import { COOKIE_NAME } from "../shared/const.js";
+import { getSessionCookieOptions } from "./_core/cookies.js";
+import { systemRouter } from "./_core/systemRouter.js";
+import { publicProcedure, router } from "./_core/trpc.js";
+import { getDb } from "./db.js";
+import { users } from "../drizzle/schema.js";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -13,7 +13,7 @@ const ADMIN_PASSWORD = "10004";
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -25,24 +25,28 @@ export const appRouter = router({
 
   shark: router({
     signup: publicProcedure
-      .input(z.object({
-        userId: z.string(),
-        password: z.string(),
-        nickname: z.string(),
-        name: z.string(),
-        bank: z.string(),
-        account: z.string(),
-        exchangePw: z.string(),
-        phone: z.string(),
-        joinCode: z.string(),
-        recentSite: z.string(),
-      }))
+      .input(
+        z.object({
+          userId: z.string(),
+          password: z.string(),
+          nickname: z.string(),
+          name: z.string(),
+          bank: z.string(),
+          account: z.string(),
+          exchangePw: z.string(),
+          phone: z.string(),
+          joinCode: z.string(),
+          recentSite: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         const db = await getDb();
         if (!db) {
-  console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
-  throw new Error("현재 서버 설정 문제로 회원가입이 불가능합니다. 관리자에게 문의하세요.");
-}
+          console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
+          throw new Error(
+            "현재 서버 설정 문제로 회원가입이 불가능합니다. 관리자에게 문의하세요."
+          );
+        }
 
         if (input.joinCode !== JOIN_CODE) {
           throw new Error("가입 코드는 2026만 가능합니다.");
@@ -52,7 +56,12 @@ export const appRouter = router({
           throw new Error("최근 이용중인 사이트를 입력해주세요.");
         }
 
-        const existing = await db.select().from(users).where(eq(users.userId, input.userId)).limit(1);
+        const existing = await db
+          .select()
+          .from(users)
+          .where(eq(users.userId, input.userId))
+          .limit(1);
+
         if (existing.length > 0) {
           throw new Error("이미 존재하는 아이디입니다.");
         }
@@ -74,43 +83,61 @@ export const appRouter = router({
       }),
 
     login: publicProcedure
-      .input(z.object({
-        userId: z.string(),
-        password: z.string(),
-      }))
+      .input(
+        z.object({
+          userId: z.string(),
+          password: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         const db = await getDb();
         if (!db) {
-  console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
-  throw new Error("현재 서버 설정 문제로 회원가입이 불가능합니다. 관리자에게 문의하세요.");
-}
+          console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
+          throw new Error(
+            "현재 서버 설정 문제로 로그인할 수 없습니다. 관리자에게 문의하세요."
+          );
+        }
 
-        const userList = await db.select().from(users).where(eq(users.userId, input.userId)).limit(1);
+        const userList = await db
+          .select()
+          .from(users)
+          .where(eq(users.userId, input.userId))
+          .limit(1);
+
         const user = userList[0];
 
         if (!user || user.password !== input.password) {
           throw new Error("아이디 또는 비밀번호가 틀립니다.");
         }
 
-        return { success: true, message: "가입 승인 대기중입니다.", status: "pending" };
+        return {
+          success: true,
+          message: "가입 승인 대기중입니다.",
+          status: "pending",
+        };
       }),
 
     getUsers: publicProcedure
-      .input(z.object({
-        adminPassword: z.string(),
-      }))
+      .input(
+        z.object({
+          adminPassword: z.string(),
+        })
+      )
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) {
-  console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
-  throw new Error("현재 서버 설정 문제로 회원가입이 불가능합니다. 관리자에게 문의하세요.");
-}
+          console.error("❌ DATABASE_URL 없음 또는 DB 연결 실패");
+          throw new Error(
+            "현재 서버 설정 문제로 관리자 기능을 사용할 수 없습니다."
+          );
+        }
 
         if (input.adminPassword !== ADMIN_PASSWORD) {
           throw new Error("관리자 비밀번호가 올바르지 않습니다.");
         }
 
-        const allUsers = await (db as any).select().from(users);
+        const allUsers = await db.select().from(users);
+
         return allUsers.map((u: typeof users.$inferSelect) => ({
           id: u.id,
           userId: u.userId,
